@@ -33,9 +33,12 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uninstallHooks = exports.installHooks = exports.flightRecorder = void 0;
+exports.getActiveSessions = exports.deregisterSession = exports.registerSession = exports.uninstallHooks = exports.installHooks = exports.flightRecorder = void 0;
 exports.flightRecorder = __importStar(require("./flight-recorder"));
 var git_hooks_1 = require("./git-hooks");
 Object.defineProperty(exports, "installHooks", { enumerable: true, get: function () { return git_hooks_1.installHooks; } });
 Object.defineProperty(exports, "uninstallHooks", { enumerable: true, get: function () { return git_hooks_1.uninstallHooks; } });
+Object.defineProperty(exports, "registerSession", { enumerable: true, get: function () { return git_hooks_1.registerSession; } });
+Object.defineProperty(exports, "deregisterSession", { enumerable: true, get: function () { return git_hooks_1.deregisterSession; } });
+Object.defineProperty(exports, "getActiveSessions", { enumerable: true, get: function () { return git_hooks_1.getActiveSessions; } });
 //# sourceMappingURL=index.js.map

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Nexus Framework - Installer
-# Usage: curl -sSL https://raw.githubusercontent.com/your-org/nexus-framework/main/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/GodModeAI2025/nexus-framework/main/install.sh | bash
 
 set -e
 
@@ -30,7 +30,7 @@ if [ -d "$INSTALL_DIR" ]; then
   cd "$INSTALL_DIR" && git pull --quiet
 else
   echo "   Cloning repository..."
-  git clone --quiet https://github.com/your-org/nexus-framework.git "$INSTALL_DIR"
+  git clone --quiet https://github.com/GodModeAI2025/nexus-framework.git "$INSTALL_DIR"
 fi
 
 cd "$INSTALL_DIR"
