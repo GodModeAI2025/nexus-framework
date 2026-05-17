@@ -1,0 +1,27 @@
+{
+  "name": "nexus-framework",
+  "version": "1.0.0",
+  "description": "Multi-Agent Multi-User Framework - Best of DIA + GSD-2",
+  "main": "dist/index.js",
+  "bin": {
+    "nexus": "./bin/nexus.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/**/*.test.js",
+    "start": "node bin/nexus.js"
+  },
+  "keywords": ["multi-agent", "framework", "git", "orchestration"],
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0",
+    "glob": "^10.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^20.0.0"
+  }
+}
