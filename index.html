@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Framework - Multi-Agent Multi-User Orchestration</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #3b82f6;
+            --accent-light: #60a5fa;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #ffffff;
+            --bg-alt: #f8fafc;
+            --bg-dark: #0f172a;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --code-bg: #1e293b;
+            --code-text: #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            color: var(--text);
+            line-height: 1.7;
+            font-size: 17px;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+
+        /* Hero */
+        .hero {
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e3a5f 100%);
+            color: white;
+            padding: 6rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+        }
+
+        .hero-content { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #fff 0%, #93c5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero .subtitle {
+            font-size: 1.4rem;
+            color: #94a3b8;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        .hero-badges {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 0.5rem 1.2rem;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        .cta-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: var(--accent-light); transform: translateY(-2px); }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.3); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+
+        /* Problem Section */
+        .problem {
+            padding: 5rem 2rem;
+            background: var(--bg-alt);
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .section-header p {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .problem-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .problem-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+        }
+
+        .problem-card .icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .problem-card .icon.red { background: #fef2f2; }
+        .problem-card .icon.yellow { background: #fffbeb; }
+        .problem-card .icon.blue { background: #eff6ff; }
+
+        .problem-card h3 { font-size: 1.1rem; margin-bottom: 0.8rem; }
+        .problem-card p { color: var(--text-muted); font-size: 0.95rem; }
+
+        /* Solution / Features */
+        .features {
+            padding: 5rem 2rem;
+        }
+
+        .feature-block {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            margin-bottom: 5rem;
+            max-width: 1100px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-bottom: 5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .feature-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .feature-block:nth-child(even) { direction: rtl; }
+        .feature-block:nth-child(even) > * { direction: ltr; }
+
+        .feature-text h3 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .feature-text p {
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            font-size: 1.05rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .feature-list li {
+            padding: 0.5rem 0;
+            padding-left: 1.8rem;
+            position: relative;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        .feature-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success);
+            font-weight: 700;
+        }
+
+        .feature-code {
+            background: var(--code-bg);
+            border-radius: 12px;
+            padding: 2rem;
+            overflow-x: auto;
+        }
+
+        .feature-code pre {
+            color: var(--code-text);
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            white-space: pre;
+        }
+
+        .feature-code .comment { color: #6b7280; }
+        .feature-code .cmd { color: #60a5fa; }
+        .feature-code .output { color: #10b981; }
+        .feature-code .warn { color: #f59e0b; }
+        .feature-code .error { color: #ef4444; }
+
+        /* Architecture */
+        .architecture {
+            padding: 5rem 2rem;
+            background: var(--bg-alt);
+        }
+
+        .arch-diagram {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+        }
+
+        .arch-layers {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .arch-layer {
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            position: relative;
+        }
+
+        .arch-layer.git { background: linear-gradient(135deg, #1e3a5f, #0f172a); color: white; }
+        .arch-layer.hooks { background: linear-gradient(135deg, #1e40af, #3b82f6); color: white; }
+        .arch-layer.engine { background: linear-gradient(135deg, #065f46, #10b981); color: white; }
+        .arch-layer.memory { background: linear-gradient(135deg, #7c2d12, #f59e0b); color: white; }
+
+        .arch-layer h4 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .arch-layer p { font-size: 0.9rem; opacity: 0.9; }
+
+        .arch-layer .components {
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+            margin-top: 0.8rem;
+        }
+
+        .arch-layer .component {
+            background: rgba(255,255,255,0.15);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+
+        /* Workflow */
+        .workflow {
+            padding: 5rem 2rem;
+        }
+
+        .workflow-steps {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .workflow-steps::before {
+            content: '';
+            position: absolute;
+            left: 28px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+
+        .step-number {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-content h4 { font-size: 1.2rem; margin-bottom: 0.5rem; margin-top: 0.5rem; }
+        .step-content p { color: var(--text-muted); font-size: 0.95rem; }
+        .step-content code {
+            background: var(--bg-alt);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            border: 1px solid var(--border);
+        }
+
+        /* Comparison Table */
+        .comparison {
+            padding: 5rem 2rem;
+            background: var(--bg-alt);
+        }
+
+        .comparison-table {
+            max-width: 900px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .comparison-table td { font-size: 0.9rem; }
+        .comparison-table tr:last-child td { border-bottom: none; }
+        .comparison-table tr:hover td { background: var(--bg-alt); }
+
+        .check { color: var(--success); font-weight: 700; }
+        .cross { color: var(--danger); }
+        .partial { color: var(--warning); }
+
+        /* Install */
+        .install {
+            padding: 5rem 2rem;
+            text-align: center;
+        }
+
+        .install-box {
+            max-width: 700px;
+            margin: 0 auto;
+            background: var(--code-bg);
+            border-radius: 12px;
+            padding: 2.5rem;
+        }
+
+        .install-box pre {
+            color: var(--code-text);
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.95rem;
+            line-height: 2;
+            text-align: left;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-dark);
+            color: #94a3b8;
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        footer a { color: var(--accent-light); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .hero .subtitle { font-size: 1.1rem; }
+            .feature-block { grid-template-columns: 1fr; gap: 2rem; }
+            .feature-block:nth-child(even) { direction: ltr; }
+            .problem-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Nexus Framework</h1>
+        <p class="subtitle">
+            Das Orchestrierungs-Framework, das mehreren KI-Agenten und Menschen ermoeglicht,
+            gleichzeitig am selben Code zu arbeiten, ohne sich gegenseitig zu zerstoeren.
+        </p>
+        <div class="hero-badges">
+            <span class="badge">Multi-Agent</span>
+            <span class="badge">Multi-User</span>
+            <span class="badge">Git-Native</span>
+            <span class="badge">Zero-Config</span>
+            <span class="badge">SQLite-Powered</span>
+        </div>
+        <div class="cta-group">
+            <a href="https://github.com/GodModeAI2025/nexus-framework" class="btn btn-primary">GitHub Repository</a>
+            <a href="#install" class="btn btn-secondary">Installation</a>
+        </div>
+    </div>
+</section>
+
+<!-- Problem -->
+<section class="problem">
+    <div class="container">
+        <div class="section-header">
+            <h2>Das Problem</h2>
+            <p>Wenn mehrere Agenten (Claude, Codex, Gemini) und Menschen gleichzeitig an einem Repository arbeiten, bricht alles zusammen.</p>
+        </div>
+        <div class="problem-grid">
+            <div class="problem-card">
+                <div class="icon red">&#x1F4A5;</div>
+                <h3>Agenten ueberschreiben sich gegenseitig</h3>
+                <p>Ohne Koordination aendern zwei Agenten dieselbe Datei. Beim Merge entsteht Chaos. Einer verliert seine Arbeit, der andere merkt es nicht einmal.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon yellow">&#x1F441;</div>
+                <h3>Niemand weiss, was andere gerade tun</h3>
+                <p>Agent A plant ein neues Auth-System, waehrend Agent B bereits eines implementiert. Es gibt keinen Mechanismus fuer gegenseitige Wahrnehmung.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon blue">&#x1F9E0;</div>
+                <h3>Architektur-Entscheidungen gehen verloren</h3>
+                <p>Ein Agent trifft eine wichtige Entscheidung in Session 1. In Session 5 weiss niemand mehr davon. Das Projekt-Gedaechtnis existiert nicht.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon red">&#x1F500;</div>
+                <h3>Merge-Konflikte haeufen sich</h3>
+                <p>Ohne intelligente Reihenfolge werden Branches wild gemergt. Architektur-Aenderungen kollidieren mit Feature-Branches und erzeugen Kaskaden-Konflikte.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon yellow">&#x1F4CB;</div>
+                <h3>Kein zentrales Backlog</h3>
+                <p>Jeder Agent arbeitet an dem, was er fuer wichtig haelt. Es gibt keine Single Source of Truth fuer den Projektstatus und die Aufgabenverteilung.</p>
+            </div>
+            <div class="problem-card">
+                <div class="icon blue">&#x1F512;</div>
+                <h3>Keine Zugriffskontrolle auf Code-Einheiten</h3>
+                <p>Zwei Agenten koennen gleichzeitig dasselbe Modul bearbeiten. Es fehlt ein Mechanismus, der exklusiven Schreibzugriff garantiert.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+    <div class="container">
+        <div class="section-header">
+            <h2>Die Loesung: Sechs Saeulen</h2>
+            <p>Nexus loest jedes dieser Probleme mit einem dedizierten Mechanismus. Zusammen bilden sie ein lueckenloses Orchestrierungs-System.</p>
+        </div>
+
+        <!-- Feature 1: Flight Recorder -->
+        <div class="feature-block">
+            <div class="feature-text">
+                <h3>1. Flugrekorder</h3>
+                <p>Jede signifikante Aktion wird automatisch aufgezeichnet. Commits, Branch-Wechsel, Planungsschritte. Git-Hooks fuettern den Rekorder ohne manuellen Aufwand. Nach dem Merge wird das temporaere Wissen automatisch aufgeraeumt.</p>
+                <ul class="feature-list">
+                    <li>Automatische Aufzeichnung durch Git-Hooks</li>
+                    <li>Echtzeit-Ueberblick ueber alle parallelen Arbeiten</li>
+                    <li>Temporaeres Wissen, das nach Merge verschwindet</li>
+                    <li>Filterbar nach Actor, Branch oder Aktion</li>
+                </ul>
+            </div>
+            <div class="feature-code">
+<pre><span class="comment"># Automatisch durch Git-Hooks:</span>
+<span class="output">&#x2705; Flight record #42 created</span>
+<span class="output">   [commit] Agent-B on feat/auth</span>
+<span class="output">   "Add JWT validation middleware"</span>
+
+<span class="comment"># Manuell abfragen:</span>
+<span class="cmd">$ nexus active-work</span>
+<span class="output">&#x1F504; Active Parallel Work:</span>
+<span class="output">  feat/auth | Claude  | JWT middleware</span>
+<span class="output">  feat/ui   | Codex   | Dashboard redesign</span>
+<span class="output">  fix/perf  | Human   | DB query optimization</span></pre>
+            </div>
+        </div>
+
+        <!-- Feature 2: Pre-Flight Check -->
+        <div class="feature-block">
+            <div class="feature-text">
+                <h3>2. Pre-Flight Check</h3>
+                <p>Bevor ein Agent mit der Planung beginnt, prueft er automatisch, ob seine geplante Arbeit mit laufenden Arbeiten anderer kollidiert. Der Check analysiert Datei-Ueberlappungen, Unit-Ownership und relevante Architektur-Entscheidungen.</p>
+                <ul class="feature-list">
+                    <li>Erkennt Datei-Ueberlappungen mit anderen Branches</li>
+                    <li>Prueft Unit-Ownership-Konflikte</li>
+                    <li>Zeigt relevante ADRs an, die beachtet werden muessen</li>
+                    <li>Drei Stufen: PROCEED, WARN, BLOCK</li>
+                </ul>
+            </div>
+            <div class="feature-code">
+<pre><span class="cmd">$ nexus preflight --actor "Claude" --branch "feat/payments"</span>
+
+<span class="error">&#x1F6AB; PRE-FLIGHT CHECK BLOCKED</span>
+<span class="error">   Critical conflicts detected.</span>
+
+<span class="output">   Active parallel work: 2 other branch(es)</span>
+<span class="output">   Relevant ADRs: 3</span>
+
+<span class="warn">   Conflicts:</span>
+<span class="error">   [CRITICAL] ownership:</span>
+<span class="error">     Unit "src/payments" claimed by Codex.</span>
+<span class="error">     Wait for release or coordinate.</span>
+
+<span class="output">&#x1F4DA; Relevant ADRs:</span>
+<span class="output">   ADR-001: Use Stripe for payments</span>
+<span class="output">   ADR-003: All APIs must be authenticated</span></pre>
+            </div>
+        </div>
+
+        <!-- Feature 3: Unit Ownership -->
+        <div class="feature-block">
+            <div class="feature-text">
+                <h3>3. Unit Ownership (Single-Writer Engine)</h3>
+                <p>Nur ein Agent kann eine Code-Einheit gleichzeitig bearbeiten. First-Writer-Wins-Semantik verhindert Race Conditions. Atomare SQLite-Operationen garantieren Konsistenz, selbst wenn mehrere Agenten gleichzeitig Claims versuchen.</p>
+                <ul class="feature-list">
+                    <li>Atomares Locking auf Verzeichnis-Ebene</li>
+                    <li>First-Writer-Wins, kein Warten noetig</li>
+                    <li>Nur der Owner kann sein Lock freigeben</li>
+                    <li>Automatische Freigabe nach Merge</li>
+                </ul>
+            </div>
+            <div class="feature-code">
+<pre><span class="cmd">$ nexus ownership claim --unit "src/auth" --actor "Claude"</span>
+<span class="output">&#x2705; Unit "src/auth" claimed by Claude</span>
+
+<span class="cmd">$ nexus ownership claim --unit "src/auth" --actor "Codex"</span>
+<span class="error">&#x1F6AB; Unit "src/auth" is already claimed by Claude</span>
+
+<span class="comment"># Nach getaner Arbeit:</span>
+<span class="cmd">$ nexus ownership release --unit "src/auth" --actor "Claude"</span>
+<span class="output">&#x2705; Unit "src/auth" released by Claude</span>
+
+<span class="cmd">$ nexus ownership list</span>
+<span class="output">&#x1F512; Active Unit Claims:</span>
+<span class="output">  src/payments &#x2192; Codex (since 14:30)</span>
+<span class="output">  src/ui/dashboard &#x2192; Gemini (since 14:45)</span></pre>
+            </div>
+        </div>
+
+        <!-- Feature 4: Smart Merge Orchestrator -->
+        <div class="feature-block">
+            <div class="feature-text">
+                <h3>4. Smart Merge Orchestrator</h3>
+                <p>Analysiert alle aktiven Feature-Branches, erkennt Datei-Ueberlappungen und berechnet die optimale Merge-Reihenfolge. Architektur-Aenderungen werden priorisiert, damit nachfolgende Branches auf der neuen Basis aufbauen koennen.</p>
+                <ul class="feature-list">
+                    <li>Automatische Erkennung von Datei-Konflikten</li>
+                    <li>Scoring-Algorithmus fuer optimale Reihenfolge</li>
+                    <li>Architektur-Branches werden immer zuerst gemergt</li>
+                    <li>Konkrete Rebase-Empfehlungen pro Konflikt</li>
+                </ul>
+            </div>
+            <div class="feature-code">
+<pre><span class="cmd">$ nexus merge-order</span>
+
+<span class="warn">&#x26A0;&#xFE0F;  2 potential conflict(s) detected.</span>
+<span class="output">Recommended merge order:</span>
+<span class="output">  1. feat/schema-migration (Score: 156)</span>
+<span class="output">  2. feat/auth (Score: 89)</span>
+<span class="output">  3. feat/ui-redesign (Score: 34)</span>
+
+<span class="warn">  Conflict: feat/schema-migration &#x2194; feat/auth</span>
+<span class="output">    Files: src/db/schema.ts, migrations/001.sql</span>
+<span class="output">    Resolution: Merge "feat/schema-migration"</span>
+<span class="output">    FIRST, then rebase "feat/auth".</span></pre>
+            </div>
+        </div>
+
+        <!-- Feature 5: ADRs -->
+        <div class="feature-block">
+            <div class="feature-text">
+                <h3>5. Architecture Decision Records (ADRs)</h3>
+                <p>Permanentes Projekt-Wissen, das ueber alle Sessions und Agenten hinweg bestehen bleibt. Jeder Agent sieht bei seinem Pre-Flight Check die relevanten Architektur-Entscheidungen und kann sie in seine Planung einbeziehen.</p>
+                <ul class="feature-list">
+                    <li>Persistentes Wissen, das nie verloren geht</li>
+                    <li>Status-Workflow: proposed, accepted, deprecated</li>
+                    <li>Automatisch im Pre-Flight Check sichtbar</li>
+                    <li>Supersede-Mechanismus fuer veraltete Entscheidungen</li>
+                </ul>
+            </div>
+            <div class="feature-code">
+<pre><span class="cmd">$ nexus adr create --id ADR-005 \</span>
+<span class="cmd">  --title "Use WebSocket for real-time" \</span>
+<span class="cmd">  --decision "Socket.io with Redis adapter" \</span>
+<span class="cmd">  --actor "Tech Lead"</span>
+<span class="output">&#x2705; ADR ADR-005 created</span>
+
+<span class="cmd">$ nexus adr accept --id ADR-005</span>
+<span class="output">&#x2705; ADR ADR-005 accepted.</span>
+
+<span class="cmd">$ nexus adr list</span>
+<span class="output">&#x1F4CB; Architecture Decision Records:</span>
+<span class="output">  [ACCEPTED] ADR-001: Use PostgreSQL</span>
+<span class="output">  [ACCEPTED] ADR-003: JWT with 15min expiry</span>
+<span class="output">  [ACCEPTED] ADR-005: WebSocket via Socket.io</span>
+<span class="output">  [DEPRECATED] ADR-002: Use MongoDB</span></pre>
+            </div>
+        </div>
+
+        <!-- Feature 6: Backlog -->
+        <div class="feature-block">
+            <div class="feature-text">
+                <h3>6. Zentrales Backlog mit Claim-Semantik</h3>
+                <p>Eine Single Source of Truth fuer alle Aufgaben. Agenten claimen Items bevor sie arbeiten, sodass keine Doppelarbeit entsteht. Der Status-Workflow (NEW, READY, IN_PROGRESS, IN_REVIEW, DONE) gibt jederzeit Ueberblick.</p>
+                <ul class="feature-list">
+                    <li>Typen: FEAT, FIX, IMP, EPIC</li>
+                    <li>Prioritaeten: P0 (kritisch), P1 (normal), P2 (nice-to-have)</li>
+                    <li>Claim-Mechanismus verhindert Doppelarbeit</li>
+                    <li>Status-Tracking ueber den gesamten Lifecycle</li>
+                </ul>
+            </div>
+            <div class="feature-code">
+<pre><span class="cmd">$ nexus backlog add --id FEAT-07 \</span>
+<span class="cmd">  --title "OAuth2 Google Login" \</span>
+<span class="cmd">  --type FEAT --priority P0</span>
+<span class="output">&#x2705; Backlog item FEAT-07 created</span>
+
+<span class="cmd">$ nexus backlog claim --id FEAT-07 --actor "Claude"</span>
+<span class="output">&#x2705; Claude claimed FEAT-07</span>
+
+<span class="cmd">$ nexus backlog list</span>
+<span class="output">&#x1F4CB; Backlog:</span>
+<span class="output">  [P0] FEAT-07: OAuth2 Google Login</span>
+<span class="output">        (IN_PROGRESS) [Claude]</span>
+<span class="output">  [P1] FIX-03: Memory leak in worker</span>
+<span class="output">        (IN_REVIEW) [Codex]</span>
+<span class="output">  [P2] IMP-12: Refactor logger module</span>
+<span class="output">        (READY)</span></pre>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Architecture -->
+<section class="architecture">
+    <div class="container">
+        <div class="section-header">
+            <h2>Architektur</h2>
+            <p>Nexus lebt als <code>.nexus/</code> Verzeichnis in deinem Projekt. Eine einzige SQLite-Datenbank im WAL-Modus bildet das zentrale Projekt-Gedaechtnis. Git-Hooks fuettern es automatisch.</p>
+        </div>
+        <div class="arch-diagram">
+            <div class="arch-layers">
+                <div class="arch-layer git">
+                    <h4>Git Layer</h4>
+                    <p>Dein bestehendes Repository bleibt unveraendert. Nexus fuegt nur Hooks hinzu.</p>
+                    <div class="components">
+                        <span class="component">post-commit</span>
+                        <span class="component">post-checkout</span>
+                        <span class="component">post-merge</span>
+                        <span class="component">pre-push</span>
+                    </div>
+                </div>
+                <div class="arch-layer hooks">
+                    <h4>Hooks &amp; Recording Layer</h4>
+                    <p>Automatische Erfassung aller Aktivitaeten ohne manuellen Aufwand.</p>
+                    <div class="components">
+                        <span class="component">Flight Recorder</span>
+                        <span class="component">Event Capture</span>
+                        <span class="component">Session Tracking</span>
+                    </div>
+                </div>
+                <div class="arch-layer engine">
+                    <h4>Orchestration Engine</h4>
+                    <p>Intelligente Koordination zwischen allen Akteuren.</p>
+                    <div class="components">
+                        <span class="component">Pre-Flight Check</span>
+                        <span class="component">Unit Ownership</span>
+                        <span class="component">Smart Merge</span>
+                        <span class="component">Conflict Detection</span>
+                    </div>
+                </div>
+                <div class="arch-layer memory">
+                    <h4>Central Project Memory</h4>
+                    <p>SQLite (WAL Mode) als persistentes Projekt-Gedaechtnis.</p>
+                    <div class="components">
+                        <span class="component">ADRs</span>
+                        <span class="component">Backlog</span>
+                        <span class="component">Unit Claims</span>
+                        <span class="component">Audit Log</span>
+                        <span class="component">Flight Records</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Workflow -->
+<section class="workflow">
+    <div class="container">
+        <div class="section-header">
+            <h2>Agent-Workflow</h2>
+            <p>Jeder Agent folgt diesem standardisierten Ablauf. Fuenf Schritte, die garantieren, dass parallele Arbeit reibungslos funktioniert.</p>
+        </div>
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h4>Pre-Flight Check</h4>
+                    <p>Pruefe, ob deine geplante Arbeit mit laufenden Arbeiten anderer kollidiert. Lies relevante ADRs. <code>nexus preflight --actor "Name"</code></p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h4>Unit Claimen</h4>
+                    <p>Reserviere die Code-Einheiten, die du bearbeiten wirst. Damit weiss jeder andere Agent, dass dieser Bereich belegt ist. <code>nexus ownership claim --unit "src/module"</code></p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h4>Arbeiten</h4>
+                    <p>Implementiere dein Feature oder deinen Fix. Die Git-Hooks zeichnen automatisch jeden Commit auf. Andere Agenten sehen deine Aktivitaet in Echtzeit.</p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h4>Unit Freigeben</h4>
+                    <p>Gib die Code-Einheiten wieder frei, damit andere Agenten sie bearbeiten koennen. <code>nexus ownership release --unit "src/module"</code></p>
+                </div>
+            </div>
+            <div class="workflow-step">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h4>Status Aktualisieren</h4>
+                    <p>Markiere dein Backlog-Item als IN_REVIEW oder DONE. Der Merge Orchestrator uebernimmt den Rest. <code>nexus backlog status --id FEAT-01 --status IN_REVIEW</code></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Comparison -->
+<section class="comparison">
+    <div class="container">
+        <div class="section-header">
+            <h2>Vergleich: Vorher vs. Nachher</h2>
+            <p>Was sich aendert, wenn Nexus in deinem Projekt aktiv ist.</p>
+        </div>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Szenario</th>
+                    <th>Ohne Nexus</th>
+                    <th>Mit Nexus</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Zwei Agenten bearbeiten dieselbe Datei</td>
+                    <td class="cross">Merge-Konflikt, Datenverlust</td>
+                    <td class="check">Unit Ownership blockiert den zweiten Agent</td>
+                </tr>
+                <tr>
+                    <td>Agent startet Arbeit an neuem Feature</td>
+                    <td class="cross">Keine Ahnung, was andere tun</td>
+                    <td class="check">Pre-Flight zeigt alle aktiven Arbeiten</td>
+                </tr>
+                <tr>
+                    <td>Architektur-Entscheidung in Session 1</td>
+                    <td class="cross">In Session 5 vergessen</td>
+                    <td class="check">ADR permanent gespeichert, im Pre-Flight sichtbar</td>
+                </tr>
+                <tr>
+                    <td>5 Branches sollen gemergt werden</td>
+                    <td class="cross">Zufaellige Reihenfolge, Kaskaden-Konflikte</td>
+                    <td class="check">Smart Merge berechnet optimale Reihenfolge</td>
+                </tr>
+                <tr>
+                    <td>Wer arbeitet gerade woran?</td>
+                    <td class="cross">Keine Transparenz</td>
+                    <td class="check">nexus status zeigt alles auf einen Blick</td>
+                </tr>
+                <tr>
+                    <td>Aufgabenverteilung zwischen Agenten</td>
+                    <td class="cross">Doppelarbeit, keine Koordination</td>
+                    <td class="check">Backlog mit Claim-Semantik verhindert Duplikate</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Install -->
+<section class="install" id="install">
+    <div class="container">
+        <div class="section-header">
+            <h2>Installation</h2>
+            <p>Drei Befehle. Dann ist Nexus einsatzbereit.</p>
+        </div>
+        <div class="install-box">
+<pre><span class="comment"># 1. Repository klonen und bauen</span>
+<span class="cmd">git clone https://github.com/GodModeAI2025/nexus-framework.git</span>
+<span class="cmd">cd nexus-framework && pnpm install && pnpm build</span>
+
+<span class="comment"># 2. Global verfuegbar machen</span>
+<span class="cmd">npm link</span>
+
+<span class="comment"># 3. In deinem Projekt aktivieren</span>
+<span class="cmd">cd dein-projekt</span>
+<span class="cmd">nexus init --install-hooks</span>
+
+<span class="output">&#x2705; Nexus initialized at .nexus/</span>
+<span class="output">&#x2705; Git hooks installed: post-commit, post-checkout, post-merge, pre-push</span>
+
+<span class="comment"># Agent-Identitaet setzen</span>
+<span class="cmd">export NEXUS_ACTOR_NAME="Claude"</span></pre>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <div class="container">
+        <p>
+            <strong style="color: white;">Nexus Framework</strong> &middot;
+            Multi-Agent Multi-User Orchestration &middot;
+            <a href="https://github.com/GodModeAI2025/nexus-framework">GitHub</a> &middot;
+            MIT License
+        </p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem;">
+            Synthesiert aus den besten Konzepten von DIA (Digital Innovation Agents) und GSD (Get Shit Done).
+        </p>
+    </div>
+</footer>
+
+</body>
+</html>
