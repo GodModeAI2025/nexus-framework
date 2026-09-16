@@ -46,10 +46,13 @@ CREATE TABLE IF NOT EXISTS backlog (
 );
 
 -- Unit Ownership: Single-Writer Engine
+-- expires_at: Lease-Ende (NULL = kein Ablauf). Abgelaufene Claims blockieren niemanden,
+-- damit ein abgestürzter Agent keine Unit dauerhaft sperrt.
 CREATE TABLE IF NOT EXISTS unit_claims (
     unit_key TEXT PRIMARY KEY,
     agent_name TEXT NOT NULL,
-    claimed_at TEXT DEFAULT (datetime('now'))
+    claimed_at TEXT DEFAULT (datetime('now')),
+    expires_at TEXT
 );
 
 -- Audit Log: Wer hat was getan und warum
@@ -74,3 +77,11 @@ CREATE INDEX IF NOT EXISTS idx_backlog_branch ON backlog(branch);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor ON audit_log(actor_name);
 CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log(action);
 `;
+
+/**
+ * Additive Migrationen für bestehende .nexus/nexus.db-Dateien.
+ * CREATE TABLE IF NOT EXISTS ergänzt keine Spalten, daher werden fehlende Spalten hier nachgezogen.
+ */
+export const COLUMN_MIGRATIONS: Array<{ table: string; column: string; ddl: string }> = [
+  { table: 'unit_claims', column: 'expires_at', ddl: 'ALTER TABLE unit_claims ADD COLUMN expires_at TEXT' },
+];

@@ -59,14 +59,27 @@ export interface UnitClaim {
     unit_key: string;
     agent_name: string;
     claimed_at?: string;
+    expires_at?: string | null;
 }
-export declare function claimUnit(db: Database.Database, unitKey: string, agentName: string): {
+/**
+ * Atomarer Claim (first-writer-wins) mit optionalem Lease.
+ * Läuft in einer IMMEDIATE-Transaktion: abgelaufene Claims auf derselben Unit werden
+ * zuerst entfernt, danach entscheidet INSERT OR IGNORE, wer gewinnt.
+ * Claimt der bisherige Owner erneut, wird sein Lease verlängert.
+ */
+export declare function claimUnit(db: Database.Database, unitKey: string, agentName: string, ttlSeconds?: number): {
     success: boolean;
     owner?: string;
+    expires_at?: string | null;
+    expiredOwner?: string;
 };
+/** Verlängert den Lease eines aktiven Claims (Heartbeat). Nur der Owner darf verlängern. */
+export declare function renewUnit(db: Database.Database, unitKey: string, agentName: string, ttlSeconds: number): string | null;
 export declare function releaseUnit(db: Database.Database, unitKey: string, agentName: string): boolean;
 export declare function getUnitOwner(db: Database.Database, unitKey: string): string | null;
 export declare function listClaims(db: Database.Database, agentName?: string): UnitClaim[];
+/** Entfernt alle abgelaufenen Claims und gibt sie zurück (z. B. für das Audit Log). */
+export declare function purgeExpiredClaims(db: Database.Database): UnitClaim[];
 export interface AuditEntry {
     id?: number;
     timestamp?: string;

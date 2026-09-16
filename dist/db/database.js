@@ -42,6 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNexusDir = getNexusDir;
 exports.findProjectRoot = findProjectRoot;
 exports.getDatabase = getDatabase;
+exports.applyColumnMigrations = applyColumnMigrations;
 exports.initNexus = initNexus;
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const path = __importStar(require("path"));
@@ -73,10 +74,21 @@ function getDatabase(projectRoot) {
     }
     const dbPath = path.join(nexusDir, DB_FILE);
     const db = new better_sqlite3_1.default(dbPath);
+    // Mehrere Agenten/Hooks greifen parallel zu: kurz auf Locks warten statt sofort SQLITE_BUSY
+    db.pragma('busy_timeout = 5000');
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
     db.exec(schema_1.SCHEMA_SQL);
+    applyColumnMigrations(db);
     return db;
+}
+function applyColumnMigrations(db) {
+    for (const m of schema_1.COLUMN_MIGRATIONS) {
+        const columns = db.prepare(`PRAGMA table_info(${m.table})`).all();
+        if (!columns.some(c => c.name === m.column)) {
+            db.exec(m.ddl);
+        }
+    }
 }
 function initNexus(projectRoot) {
     const root = projectRoot || process.cwd();

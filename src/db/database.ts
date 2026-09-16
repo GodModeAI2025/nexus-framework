@@ -5,7 +5,7 @@
 import Database from 'better-sqlite3';
 import * as path from 'path';
 import * as fs from 'fs';
-import { SCHEMA_SQL } from './schema';
+import { SCHEMA_SQL, COLUMN_MIGRATIONS } from './schema';
 
 const NEXUS_DIR = '.nexus';
 const DB_FILE = 'nexus.db';
@@ -36,10 +36,22 @@ export function getDatabase(projectRoot?: string): Database.Database {
   }
   const dbPath = path.join(nexusDir, DB_FILE);
   const db = new Database(dbPath);
+  // Mehrere Agenten/Hooks greifen parallel zu: kurz auf Locks warten statt sofort SQLITE_BUSY
+  db.pragma('busy_timeout = 5000');
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA_SQL);
+  applyColumnMigrations(db);
   return db;
+}
+
+export function applyColumnMigrations(db: Database.Database): void {
+  for (const m of COLUMN_MIGRATIONS) {
+    const columns = db.prepare(`PRAGMA table_info(${m.table})`).all() as Array<{ name: string }>;
+    if (!columns.some(c => c.name === m.column)) {
+      db.exec(m.ddl);
+    }
+  }
 }
 
 export function initNexus(projectRoot?: string): string {

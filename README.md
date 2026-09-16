@@ -96,7 +96,7 @@ Or when conflicts exist:
 
 ### 3. Unit Ownership (Single-Writer Engine)
 
-Only one agent can modify a code unit at a time. First-writer-wins semantics prevent race conditions.
+Only one agent can modify a code unit at a time. Claims are atomic (first-writer-wins inside a single SQLite transaction), so two agents claiming the same unit concurrently cannot both succeed.
 
 ```bash
 # Claim a unit before working on it
@@ -108,6 +108,21 @@ nexus ownership release --unit "src/auth" --actor "Claude"
 # See who owns what
 nexus ownership list
 ```
+
+**Leases for agents.** An agent that crashes never runs `release`. Give claims a lease so they stop blocking others once it runs out:
+
+```bash
+# Claim with a 30-minute lease (or set NEXUS_CLAIM_TTL=1800)
+nexus ownership claim --unit "src/auth" --actor "Claude" --ttl 1800
+
+# Heartbeat: extend the lease while work is still running
+nexus ownership renew --unit "src/auth" --actor "Claude" --ttl 1800
+
+# Remove expired claims and record them in the audit log
+nexus ownership reap
+```
+
+Expired claims are ignored by `preflight`, `ownership list` and `ownership check`, and a new claim on the same unit takes over automatically (logged as `unit_lease_expired`). Claims without `--ttl` never expire. Existing `.nexus/nexus.db` files are migrated automatically.
 
 ### 4. Smart Merge Orchestrator
 
@@ -169,6 +184,7 @@ Set these in your agent's environment:
 ```bash
 export NEXUS_ACTOR_NAME="Claude"      # Agent identity
 export NEXUS_SESSION_ID="session-123"  # Session tracking
+export NEXUS_CLAIM_TTL=1800            # Default lease for ownership claims (seconds)
 ```
 
 ### Workflow for Agents
@@ -177,8 +193,8 @@ Every agent should follow this workflow:
 
 ```
 1. nexus preflight --actor $NEXUS_ACTOR_NAME --branch $TARGET_BRANCH
-2. nexus ownership claim --unit $TARGET_UNIT --actor $NEXUS_ACTOR_NAME
-3. [do the work]
+2. nexus ownership claim --unit $TARGET_UNIT --actor $NEXUS_ACTOR_NAME --ttl 1800
+3. [do the work — run `nexus ownership renew` before the lease runs out]
 4. nexus ownership release --unit $TARGET_UNIT --actor $NEXUS_ACTOR_NAME
 5. nexus backlog status --id $ITEM_ID --status IN_REVIEW
 ```
@@ -242,8 +258,18 @@ your-project/
 | `adrs` | Permanent architectural decisions |
 | `flight_recorder` | Temporary activity log (cleaned after merge) |
 | `backlog` | Project backlog with claim semantics |
-| `unit_claims` | Single-writer ownership locks |
+| `unit_claims` | Single-writer ownership locks (optional lease via `expires_at`) |
 | `audit_log` | Complete audit trail |
+
+---
+
+## Development
+
+```bash
+pnpm install
+pnpm build
+pnpm test   # node:test suites compiled to dist/**/*.test.js
+```
 
 ---
 
