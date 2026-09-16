@@ -45,13 +45,22 @@ export function getDatabase(projectRoot?: string): Database.Database {
   return db;
 }
 
+function hasColumn(db: Database.Database, table: string, column: string): boolean {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  return columns.some(c => c.name === column);
+}
+
 export function applyColumnMigrations(db: Database.Database): void {
-  for (const m of COLUMN_MIGRATIONS) {
-    const columns = db.prepare(`PRAGMA table_info(${m.table})`).all() as Array<{ name: string }>;
-    if (!columns.some(c => c.name === m.column)) {
-      db.exec(m.ddl);
+  const pending = COLUMN_MIGRATIONS.filter(m => !hasColumn(db, m.table, m.column));
+  if (pending.length === 0) return;
+  // Mehrere Prozesse können eine Alt-DB gleichzeitig öffnen: unter Schreibsperre erneut prüfen,
+  // sonst scheitert der zweite ALTER TABLE mit "duplicate column name".
+  const migrate = db.transaction(() => {
+    for (const m of pending) {
+      if (!hasColumn(db, m.table, m.column)) db.exec(m.ddl);
     }
-  }
+  });
+  migrate.immediate();
 }
 
 export function initNexus(projectRoot?: string): string {

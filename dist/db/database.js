@@ -82,13 +82,23 @@ function getDatabase(projectRoot) {
     applyColumnMigrations(db);
     return db;
 }
+function hasColumn(db, table, column) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+    return columns.some(c => c.name === column);
+}
 function applyColumnMigrations(db) {
-    for (const m of schema_1.COLUMN_MIGRATIONS) {
-        const columns = db.prepare(`PRAGMA table_info(${m.table})`).all();
-        if (!columns.some(c => c.name === m.column)) {
-            db.exec(m.ddl);
+    const pending = schema_1.COLUMN_MIGRATIONS.filter(m => !hasColumn(db, m.table, m.column));
+    if (pending.length === 0)
+        return;
+    // Mehrere Prozesse können eine Alt-DB gleichzeitig öffnen: unter Schreibsperre erneut prüfen,
+    // sonst scheitert der zweite ALTER TABLE mit "duplicate column name".
+    const migrate = db.transaction(() => {
+        for (const m of pending) {
+            if (!hasColumn(db, m.table, m.column))
+                db.exec(m.ddl);
         }
-    }
+    });
+    migrate.immediate();
 }
 function initNexus(projectRoot) {
     const root = projectRoot || process.cwd();
