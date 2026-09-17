@@ -69,6 +69,14 @@ nexus ownership claim --unit "src/api/auth.ts" --actor "Claude-Backend"
 ```
 *Was passiert:* Die Datei ist jetzt für Claude gesperrt. Wenn ein anderer Agent versucht, diese Datei zu ändern, blockieren die Git-Hooks den Commit.
 
+Für Agenten empfiehlt sich ein **Lease** (`--ttl` in Sekunden oder `NEXUS_CLAIM_TTL`). Stürzt ein Agent ab oder vergisst das Release, blockiert sein Claim nach Ablauf niemanden mehr. Bei längerer Arbeit hält der Agent den Claim per Heartbeat am Leben:
+
+```bash
+nexus ownership claim --unit "src/api/auth.ts" --actor "Claude-Backend" --ttl 1800
+nexus ownership renew --unit "src/api/auth.ts" --actor "Claude-Backend" --ttl 1800
+nexus ownership reap   # abgelaufene Claims entfernen und im Audit Log vermerken
+```
+
 ### 5. Arbeiten und Workflow-Phasen
 
 Der Agent arbeitet nun ganz normal mit Git. Nexus trackt den Fortschritt über das V-Model.

@@ -7,7 +7,7 @@
  * - init: Initialize Nexus in a project
  * - hooks: Install/uninstall git hooks
  * - preflight: Cross-agent conflict detection
- * - ownership: Unit ownership (claim/release/list)
+ * - ownership: Unit ownership (claim/renew/release/list/reap)
  * - flight-record / flight-log / active-work: Flight recorder
  * - merge-order / merge-cleanup: Smart merge orchestrator
  * - adr: Architecture Decision Records
@@ -227,11 +227,38 @@ ownershipCmd
     .description('Claim a unit for exclusive write access')
     .requiredOption('--unit <key>', 'Unit key (e.g., src/renderer)')
     .requiredOption('--actor <name>', 'Actor name')
+    .option('--ttl <seconds>', 'Lease duration in seconds; expired claims no longer block others (default: $NEXUS_CLAIM_TTL or no expiry)')
     .action((opts) => {
-    const result = (0, ownership_1.claim)(opts.unit, opts.actor);
+    const result = (0, ownership_1.claim)(opts.unit, opts.actor, (0, ownership_1.resolveClaimTtl)(opts.ttl));
     console.log(result.message);
     if (!result.success)
         process.exit(1);
+});
+ownershipCmd
+    .command('renew')
+    .description('Renew the lease of a unit you own (heartbeat for long-running work)')
+    .requiredOption('--unit <key>', 'Unit key')
+    .requiredOption('--actor <name>', 'Actor name')
+    .option('--ttl <seconds>', 'New lease duration in seconds from now (default: $NEXUS_CLAIM_TTL or 1800)')
+    .action((opts) => {
+    const result = (0, ownership_1.renew)(opts.unit, opts.actor, (0, ownership_1.resolveClaimTtl)(opts.ttl) ?? 1800);
+    console.log(result.message);
+    if (!result.success)
+        process.exit(1);
+});
+ownershipCmd
+    .command('reap')
+    .description('Remove expired claims and record them in the audit log')
+    .action(() => {
+    const expired = (0, ownership_1.reapExpiredClaims)();
+    if (expired.length === 0) {
+        console.log('ℹ️  No expired claims.');
+        return;
+    }
+    console.log(`🧹 Released ${expired.length} expired claim(s):`);
+    for (const c of expired) {
+        console.log(`  ${c.unit_key} → ${c.agent_name} (expired ${c.expires_at})`);
+    }
 });
 ownershipCmd
     .command('release')
@@ -257,7 +284,8 @@ ownershipCmd
     console.log('🔒 Active Unit Claims:');
     console.log('─'.repeat(60));
     for (const c of claims) {
-        console.log(`  ${c.unit_key} → ${c.agent_name} (since ${c.claimed_at})`);
+        const lease = c.expires_at ? `, lease until ${c.expires_at}` : '';
+        console.log(`  ${c.unit_key} → ${c.agent_name} (since ${c.claimed_at}${lease})`);
     }
 });
 ownershipCmd

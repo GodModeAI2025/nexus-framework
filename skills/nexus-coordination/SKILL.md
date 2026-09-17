@@ -14,7 +14,7 @@ phases: [ba, re, arch, code, test, sec, review, release]
    - Are other agents working on overlapping files?
    - Are there accepted ADRs that constrain your work?
    - Are there ready PRs that should be merged first?
-4. **Claim ownership:** Run `nexus ownership claim --unit <path>` for every directory you will modify.
+4. **Claim ownership:** Run `nexus ownership claim --unit <path> --ttl 1800` for every directory you will modify. The lease guarantees your claim does not block others forever if your session dies.
 5. **Verify branch:** Ensure you are on the correct feature branch for your backlog item.
 
 ### During Work
@@ -22,6 +22,7 @@ phases: [ba, re, arch, code, test, sec, review, release]
 6. **Commit frequently:** Small, focused commits. The hooks record everything automatically.
 7. **Update BACKLOG.md:** On every status change, update the backlog row FIRST, then the artifact.
 8. **Respect ownership:** Never modify files in a unit claimed by another agent. If you need to, coordinate via `nexus preflight`.
+   - **Keep your lease alive:** For work that takes longer than the lease, run `nexus ownership renew --unit <path> --ttl 1800` periodically. If renew fails, your lease expired: run `nexus preflight` and claim again before touching the unit.
 
 ### After Finishing Work
 
@@ -36,6 +37,7 @@ phases: [ba, re, arch, code, test, sec, review, release]
 - If another agent owns a unit you need, **ASK** (via handoff or direct communication) before proceeding.
 - If `nexus merge-order` shows your branch depends on another, wait for that branch to merge first.
 - If you detect a stale session (>2h inactive), you may override with `--force` flag.
+- Expired ownership leases do not block you: `nexus ownership reap` removes them, and a new claim takes over automatically.
 
 ### Build & Release Context
 

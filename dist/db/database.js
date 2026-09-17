@@ -42,6 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getNexusDir = getNexusDir;
 exports.findProjectRoot = findProjectRoot;
 exports.getDatabase = getDatabase;
+exports.applyColumnMigrations = applyColumnMigrations;
 exports.initNexus = initNexus;
 const better_sqlite3_1 = __importDefault(require("better-sqlite3"));
 const path = __importStar(require("path"));
@@ -73,10 +74,31 @@ function getDatabase(projectRoot) {
     }
     const dbPath = path.join(nexusDir, DB_FILE);
     const db = new better_sqlite3_1.default(dbPath);
+    // Mehrere Agenten/Hooks greifen parallel zu: kurz auf Locks warten statt sofort SQLITE_BUSY
+    db.pragma('busy_timeout = 5000');
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
     db.exec(schema_1.SCHEMA_SQL);
+    applyColumnMigrations(db);
     return db;
+}
+function hasColumn(db, table, column) {
+    const columns = db.prepare(`PRAGMA table_info(${table})`).all();
+    return columns.some(c => c.name === column);
+}
+function applyColumnMigrations(db) {
+    const pending = schema_1.COLUMN_MIGRATIONS.filter(m => !hasColumn(db, m.table, m.column));
+    if (pending.length === 0)
+        return;
+    // Mehrere Prozesse können eine Alt-DB gleichzeitig öffnen: unter Schreibsperre erneut prüfen,
+    // sonst scheitert der zweite ALTER TABLE mit "duplicate column name".
+    const migrate = db.transaction(() => {
+        for (const m of pending) {
+            if (!hasColumn(db, m.table, m.column))
+                db.exec(m.ddl);
+        }
+    });
+    migrate.immediate();
 }
 function initNexus(projectRoot) {
     const root = projectRoot || process.cwd();

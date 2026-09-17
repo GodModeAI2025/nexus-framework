@@ -6,7 +6,7 @@
  * - init: Initialize Nexus in a project
  * - hooks: Install/uninstall git hooks
  * - preflight: Cross-agent conflict detection
- * - ownership: Unit ownership (claim/release/list)
+ * - ownership: Unit ownership (claim/renew/release/list/reap)
  * - flight-record / flight-log / active-work: Flight recorder
  * - merge-order / merge-cleanup: Smart merge orchestrator
  * - adr: Architecture Decision Records

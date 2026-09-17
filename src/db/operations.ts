@@ -196,18 +196,72 @@ export interface UnitClaim {
   unit_key: string;
   agent_name: string;
   claimed_at?: string;
+  expires_at?: string | null;
 }
 
-export function claimUnit(db: Database.Database, unitKey: string, agentName: string): { success: boolean; owner?: string } {
-  const existing = db.prepare('SELECT agent_name FROM unit_claims WHERE unit_key = ?').get(unitKey) as { agent_name: string } | undefined;
-  if (existing) {
-    if (existing.agent_name === agentName) {
-      return { success: true, owner: agentName };
-    }
-    return { success: false, owner: existing.agent_name };
+/** SQL-Bedingung für Claims, deren Lease noch läuft (oder die keinen Ablauf haben). */
+const ACTIVE_CLAIM = "(expires_at IS NULL OR expires_at > datetime('now'))";
+
+function leaseModifier(ttlSeconds?: number): string | null {
+  if (ttlSeconds === undefined || ttlSeconds === null) return null;
+  if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0) {
+    throw new Error(`Invalid lease TTL: ${ttlSeconds} (expected a positive integer of seconds)`);
   }
-  db.prepare('INSERT OR IGNORE INTO unit_claims (unit_key, agent_name) VALUES (?, ?)').run(unitKey, agentName);
-  return { success: true, owner: agentName };
+  return `+${ttlSeconds} seconds`;
+}
+
+/**
+ * Atomarer Claim (first-writer-wins) mit optionalem Lease.
+ * Läuft in einer IMMEDIATE-Transaktion: abgelaufene Claims auf derselben Unit werden
+ * zuerst entfernt, danach entscheidet INSERT OR IGNORE, wer gewinnt.
+ * Claimt der bisherige Owner erneut, wird sein Lease verlängert.
+ */
+export function claimUnit(
+  db: Database.Database,
+  unitKey: string,
+  agentName: string,
+  ttlSeconds?: number,
+): { success: boolean; owner?: string; expires_at?: string | null; expiredOwner?: string } {
+  const modifier = leaseModifier(ttlSeconds);
+  const run = db.transaction(() => {
+    const expired = db.prepare(
+      "SELECT agent_name FROM unit_claims WHERE unit_key = ? AND expires_at IS NOT NULL AND expires_at <= datetime('now')"
+    ).get(unitKey) as { agent_name: string } | undefined;
+    if (expired) {
+      db.prepare('DELETE FROM unit_claims WHERE unit_key = ?').run(unitKey);
+    }
+
+    const inserted = db.prepare(`
+      INSERT OR IGNORE INTO unit_claims (unit_key, agent_name, expires_at)
+      VALUES (?, ?, CASE WHEN ? IS NULL THEN NULL ELSE datetime('now', ?) END)
+    `).run(unitKey, agentName, modifier, modifier);
+
+    if (inserted.changes === 0) {
+      const existing = db.prepare('SELECT agent_name FROM unit_claims WHERE unit_key = ?').get(unitKey) as { agent_name: string };
+      if (existing.agent_name !== agentName) {
+        return { success: false, owner: existing.agent_name };
+      }
+      if (modifier) {
+        db.prepare("UPDATE unit_claims SET expires_at = datetime('now', ?) WHERE unit_key = ?").run(modifier, unitKey);
+      }
+    }
+
+    const row = db.prepare('SELECT expires_at FROM unit_claims WHERE unit_key = ?').get(unitKey) as { expires_at: string | null };
+    return { success: true, owner: agentName, expires_at: row.expires_at, expiredOwner: expired?.agent_name };
+  });
+  return run.immediate();
+}
+
+/** Verlängert den Lease eines aktiven Claims (Heartbeat). Nur der Owner darf verlängern. */
+export function renewUnit(db: Database.Database, unitKey: string, agentName: string, ttlSeconds: number): string | null {
+  const modifier = leaseModifier(ttlSeconds)!;
+  const result = db.prepare(`
+    UPDATE unit_claims SET expires_at = datetime('now', ?)
+    WHERE unit_key = ? AND agent_name = ? AND ${ACTIVE_CLAIM}
+  `).run(modifier, unitKey, agentName);
+  if (result.changes === 0) return null;
+  const row = db.prepare('SELECT expires_at FROM unit_claims WHERE unit_key = ?').get(unitKey) as { expires_at: string };
+  return row.expires_at;
 }
 
 export function releaseUnit(db: Database.Database, unitKey: string, agentName: string): boolean {
@@ -216,15 +270,25 @@ export function releaseUnit(db: Database.Database, unitKey: string, agentName: s
 }
 
 export function getUnitOwner(db: Database.Database, unitKey: string): string | null {
-  const row = db.prepare('SELECT agent_name FROM unit_claims WHERE unit_key = ?').get(unitKey) as { agent_name: string } | undefined;
+  const row = db.prepare(`SELECT agent_name FROM unit_claims WHERE unit_key = ? AND ${ACTIVE_CLAIM}`).get(unitKey) as { agent_name: string } | undefined;
   return row?.agent_name || null;
 }
 
 export function listClaims(db: Database.Database, agentName?: string): UnitClaim[] {
   if (agentName) {
-    return db.prepare('SELECT * FROM unit_claims WHERE agent_name = ?').all(agentName) as UnitClaim[];
+    return db.prepare(`SELECT * FROM unit_claims WHERE agent_name = ? AND ${ACTIVE_CLAIM}`).all(agentName) as UnitClaim[];
   }
-  return db.prepare('SELECT * FROM unit_claims ORDER BY claimed_at DESC').all() as UnitClaim[];
+  return db.prepare(`SELECT * FROM unit_claims WHERE ${ACTIVE_CLAIM} ORDER BY claimed_at DESC`).all() as UnitClaim[];
+}
+
+/** Entfernt alle abgelaufenen Claims und gibt sie zurück (z. B. für das Audit Log). */
+export function purgeExpiredClaims(db: Database.Database): UnitClaim[] {
+  const purge = db.transaction(() => {
+    const expired = db.prepare(`SELECT * FROM unit_claims WHERE NOT ${ACTIVE_CLAIM}`).all() as UnitClaim[];
+    db.prepare(`DELETE FROM unit_claims WHERE NOT ${ACTIVE_CLAIM}`).run();
+    return expired;
+  });
+  return purge.immediate();
 }
 
 // ============================================================
