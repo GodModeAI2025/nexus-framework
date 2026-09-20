@@ -56,9 +56,11 @@ nexus session start --actor "Claude-Backend" --type "agent"
 Bevor ein Agent (oder Mensch) anfängt, Code zu schreiben, **muss** er den Pre-Flight Check ausführen. Er teilt dem System mit, was er vorhat.
 
 ```bash
-nexus preflight --actor "Claude-Backend" --intent "Implementiere User-Auth API in src/api/auth.ts"
+nexus preflight --actor "Claude-Backend" --unit "src/api/auth.ts"
 ```
 *Was passiert:* Nexus scannt die aktiven Sessions, die geclaimten Units und das Backlog. Es warnt den Agenten: *"Achtung, Bob arbeitet gerade an der Datenbank-Verbindung, die du für Auth brauchst. Warte, bis er fertig ist, oder sprich dich ab."*
+
+`--unit` nimmt mehrere Werte (`--unit src/api src/db`) und ist beim Planen entscheidend: Solange noch nichts geändert ist, kennt Nexus sonst keine Dateien und kann fremde Claims nicht gegen das Vorhaben halten. Der Abgleich endet an Pfadgrenzen – ein Claim auf `src/auth` deckt `src/auth/login.ts` ab, aber nicht `src/authority.ts`.
 
 ### 4. Unit Ownership (Single-Writer Guarantee)
 

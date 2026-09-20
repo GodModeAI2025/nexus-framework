@@ -29,9 +29,22 @@ export interface PreFlightResult {
     recommendation: 'proceed' | 'warn' | 'block';
     summary: string;
 }
+/**
+ * Normalizes a path or unit key before comparing scopes:
+ * strips a leading "./", trailing slashes and surrounding whitespace.
+ */
+export declare function normalizeScope(value: string): string;
+/**
+ * Two scopes overlap when they are equal or when one contains the other
+ * as a directory. The comparison stops at path boundaries, so the unit
+ * "src/auth" covers "src/auth/login.ts" but never "src/authority.ts".
+ */
+export declare function scopesOverlap(a: string, b: string): boolean;
 export declare function runPreFlight(actorName: string, options?: {
     branch?: string;
     targetFiles?: string[];
+    /** Units or paths the actor intends to touch — checked in addition to the files Git reports. */
+    scope?: string[];
     quiet?: boolean;
 }): PreFlightResult;
 //# sourceMappingURL=preflight.d.ts.map

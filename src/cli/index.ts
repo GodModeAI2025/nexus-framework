@@ -215,10 +215,12 @@ program
   .description('Run pre-flight check before starting work (cross-agent awareness)')
   .requiredOption('--actor <name>', 'Your actor name')
   .option('--branch <branch>', 'Target branch')
+  .option('--unit <key...>', 'Unit(s) or path(s) you intend to touch — checked against claims of other actors')
   .option('--quiet', 'Only output if conflicts found')
   .action((opts) => {
     const result = runPreFlight(opts.actor, {
       branch: opts.branch,
+      scope: opts.unit,
       quiet: opts.quiet,
     });
 

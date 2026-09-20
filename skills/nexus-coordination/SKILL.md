@@ -10,8 +10,9 @@ phases: [ba, re, arch, code, test, sec, review, release]
 
 1. **Identify yourself:** Set `NEXUS_ACTOR` environment variable or use `--actor` flag.
 2. **Register session:** Run `nexus session start --actor <name> --branch <branch>`.
-3. **Pre-flight check:** Run `nexus preflight --actor <name>`. This checks:
+3. **Pre-flight check:** Run `nexus preflight --actor <name> --unit <path...>`. Name every unit you intend to touch — while you are still planning there are no changed files, so without `--unit` nothing can be checked against the claims of other agents. This checks:
    - Are other agents working on overlapping files?
+   - Is one of your units claimed by someone else?
    - Are there accepted ADRs that constrain your work?
    - Are there ready PRs that should be merged first?
 4. **Claim ownership:** Run `nexus ownership claim --unit <path> --ttl 1800` for every directory you will modify. The lease guarantees your claim does not block others forever if your session dies.

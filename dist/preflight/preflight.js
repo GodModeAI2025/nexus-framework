@@ -4,6 +4,8 @@
  * Cross-Agent-Awareness: Before any agent starts planning, check what others are doing.
  */
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.normalizeScope = normalizeScope;
+exports.scopesOverlap = scopesOverlap;
 exports.runPreFlight = runPreFlight;
 const db_1 = require("../db");
 const child_process_1 = require("child_process");
@@ -36,15 +38,36 @@ function getBranchFiles(branch) {
         return [];
     }
 }
+/**
+ * Normalizes a path or unit key before comparing scopes:
+ * strips a leading "./", trailing slashes and surrounding whitespace.
+ */
+function normalizeScope(value) {
+    return value.trim().replace(/^\.\/+/, '').replace(/\/+$/, '');
+}
+/**
+ * Two scopes overlap when they are equal or when one contains the other
+ * as a directory. The comparison stops at path boundaries, so the unit
+ * "src/auth" covers "src/auth/login.ts" but never "src/authority.ts".
+ */
+function scopesOverlap(a, b) {
+    const left = normalizeScope(a);
+    const right = normalizeScope(b);
+    if (!left || !right)
+        return false;
+    return left === right || right.startsWith(`${left}/`) || left.startsWith(`${right}/`);
+}
 function findFileOverlaps(myFiles, otherFiles) {
-    const mySet = new Set(myFiles);
-    return otherFiles.filter(f => mySet.has(f));
+    return otherFiles.filter(f => myFiles.some(mine => scopesOverlap(mine, f)));
 }
 function runPreFlight(actorName, options) {
     const db = (0, db_1.getDatabase)();
     try {
         const currentBranch = options?.branch || getCurrentBranch();
-        const myFiles = options?.targetFiles || getChangedFiles(currentBranch);
+        const declaredScope = (options?.scope || []).map(normalizeScope).filter(Boolean);
+        const gitFiles = options?.targetFiles || getChangedFiles(currentBranch);
+        // Declared scope first: an agent that is still planning has no changed files yet.
+        const myFiles = [...new Set([...declaredScope, ...gitFiles])];
         const conflicts = [];
         // 1. Check active work from other agents/users
         const activeWork = (0, db_1.getActiveWork)(db);
@@ -73,8 +96,8 @@ function runPreFlight(actorName, options) {
         const claims = (0, db_1.listClaims)(db);
         const otherClaims = claims.filter(c => c.agent_name !== actorName);
         const claimedConflicts = otherClaims.filter(c => {
-            // Check if any of my target files fall under a claimed unit
-            return myFiles.some(f => f.startsWith(c.unit_key) || c.unit_key.includes(f));
+            // Check if any of my target files fall under a claimed unit (path-boundary aware)
+            return myFiles.some(f => scopesOverlap(c.unit_key, f));
         });
         for (const claim of claimedConflicts) {
             conflicts.push({

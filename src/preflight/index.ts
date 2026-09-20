@@ -1,1 +1,1 @@
-export { runPreFlight, type PreFlightResult, type ConflictWarning } from './preflight';
+export { runPreFlight, normalizeScope, scopesOverlap, type PreFlightResult, type ConflictWarning } from './preflight';
