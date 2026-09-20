@@ -53,20 +53,58 @@ function getBranchFiles(branch: string): string[] {
   }
 }
 
+/**
+ * Normalizes a path or unit key before comparing scopes: surrounding whitespace,
+ * backslashes (Windows), empty segments ("//", trailing "/") and the "." / ".."
+ * segments are resolved. Without this, "src/auth/../payments" would still look
+ * like a hit on a claim for "src/auth".
+ */
+export function normalizeScope(value: string): string {
+  const segments: string[] = [];
+  for (const segment of value.trim().replace(/\\/g, '/').split('/')) {
+    if (segment === '' || segment === '.') continue;
+    if (segment === '..') {
+      // A ".." that would escape the scope is kept, so the scope stays distinct
+      // instead of silently collapsing onto the repository root.
+      if (segments.length > 0 && segments[segments.length - 1] !== '..') segments.pop();
+      else segments.push('..');
+      continue;
+    }
+    segments.push(segment);
+  }
+  return segments.join('/');
+}
+
+/**
+ * Two scopes overlap when they are equal or when one contains the other
+ * as a directory. The comparison stops at path boundaries, so the unit
+ * "src/auth" covers "src/auth/login.ts" but never "src/authority.ts".
+ */
+export function scopesOverlap(a: string, b: string): boolean {
+  const left = normalizeScope(a);
+  const right = normalizeScope(b);
+  if (!left || !right) return false;
+  return left === right || right.startsWith(`${left}/`) || left.startsWith(`${right}/`);
+}
+
 function findFileOverlaps(myFiles: string[], otherFiles: string[]): string[] {
-  const mySet = new Set(myFiles);
-  return otherFiles.filter(f => mySet.has(f));
+  return otherFiles.filter(f => myFiles.some(mine => scopesOverlap(mine, f)));
 }
 
 export function runPreFlight(actorName: string, options?: {
   branch?: string;
   targetFiles?: string[];
+  /** Units or paths the actor intends to touch — checked in addition to the files Git reports. */
+  scope?: string[];
   quiet?: boolean;
 }): PreFlightResult {
   const db = getDatabase();
   try {
     const currentBranch = options?.branch || getCurrentBranch();
-    const myFiles = options?.targetFiles || getChangedFiles(currentBranch);
+    const declaredScope = (options?.scope || []).map(normalizeScope).filter(Boolean);
+    const gitFiles = options?.targetFiles || getChangedFiles(currentBranch);
+    // Declared scope first: an agent that is still planning has no changed files yet.
+    const myFiles = [...new Set([...declaredScope, ...gitFiles])];
     const conflicts: ConflictWarning[] = [];
 
     // 1. Check active work from other agents/users
@@ -102,8 +140,8 @@ export function runPreFlight(actorName: string, options?: {
     const claims = listClaims(db);
     const otherClaims = claims.filter(c => c.agent_name !== actorName);
     const claimedConflicts = otherClaims.filter(c => {
-      // Check if any of my target files fall under a claimed unit
-      return myFiles.some(f => f.startsWith(c.unit_key) || c.unit_key.includes(f));
+      // Check if any of my target files fall under a claimed unit (path-boundary aware)
+      return myFiles.some(f => scopesOverlap(c.unit_key, f));
     });
 
     for (const claim of claimedConflicts) {

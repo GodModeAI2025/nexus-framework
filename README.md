@@ -73,7 +73,13 @@ Before any agent starts planning, it runs a pre-flight check to detect conflicts
 
 ```bash
 nexus preflight --actor "Claude" --branch "feat/payments"
+
+# While planning, name the units you are about to touch — otherwise Nexus only
+# knows the files you already changed and cannot check them against other claims.
+nexus preflight --actor "Claude" --unit "src/payments" "src/db/schema.ts"
 ```
+
+Units and paths are matched at path boundaries: a claim on `src/auth` covers `src/auth/login.ts`, but never `src/authority.ts`.
 
 Output:
 ```
@@ -192,7 +198,7 @@ export NEXUS_CLAIM_TTL=1800            # Default lease for ownership claims (sec
 Every agent should follow this workflow:
 
 ```
-1. nexus preflight --actor $NEXUS_ACTOR_NAME --branch $TARGET_BRANCH
+1. nexus preflight --actor $NEXUS_ACTOR_NAME --branch $TARGET_BRANCH --unit $TARGET_UNIT
 2. nexus ownership claim --unit $TARGET_UNIT --actor $NEXUS_ACTOR_NAME --ttl 1800
 3. [do the work — run `nexus ownership renew` before the lease runs out]
 4. nexus ownership release --unit $TARGET_UNIT --actor $NEXUS_ACTOR_NAME
