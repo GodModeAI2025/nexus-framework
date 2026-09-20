@@ -39,11 +39,28 @@ function getBranchFiles(branch) {
     }
 }
 /**
- * Normalizes a path or unit key before comparing scopes:
- * strips a leading "./", trailing slashes and surrounding whitespace.
+ * Normalizes a path or unit key before comparing scopes: surrounding whitespace,
+ * backslashes (Windows), empty segments ("//", trailing "/") and the "." / ".."
+ * segments are resolved. Without this, "src/auth/../payments" would still look
+ * like a hit on a claim for "src/auth".
  */
 function normalizeScope(value) {
-    return value.trim().replace(/^\.\/+/, '').replace(/\/+$/, '');
+    const segments = [];
+    for (const segment of value.trim().replace(/\\/g, '/').split('/')) {
+        if (segment === '' || segment === '.')
+            continue;
+        if (segment === '..') {
+            // A ".." that would escape the scope is kept, so the scope stays distinct
+            // instead of silently collapsing onto the repository root.
+            if (segments.length > 0 && segments[segments.length - 1] !== '..')
+                segments.pop();
+            else
+                segments.push('..');
+            continue;
+        }
+        segments.push(segment);
+    }
+    return segments.join('/');
 }
 /**
  * Two scopes overlap when they are equal or when one contains the other

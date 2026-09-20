@@ -38,6 +38,21 @@ const preflight_1 = require("./preflight");
     strict_1.default.equal((0, preflight_1.scopesOverlap)('./src/auth/', 'src/auth/login.ts'), true);
     strict_1.default.equal((0, preflight_1.scopesOverlap)('src/auth', './src/auth'), true);
 });
+(0, node_test_1.test)('normalization handles backslashes, empty and dot segments', () => {
+    strict_1.default.equal((0, preflight_1.normalizeScope)('src\\auth\\login.ts'), 'src/auth/login.ts');
+    strict_1.default.equal((0, preflight_1.normalizeScope)('src//auth///login.ts'), 'src/auth/login.ts');
+    strict_1.default.equal((0, preflight_1.normalizeScope)('src/./auth/'), 'src/auth');
+    strict_1.default.equal((0, preflight_1.scopesOverlap)('src/auth', 'src\\auth\\login.ts'), true);
+    strict_1.default.equal((0, preflight_1.scopesOverlap)('src/auth', 'src/./auth/login.ts'), true);
+});
+(0, node_test_1.test)('".." is resolved, so a detour through a claimed unit is not a hit', () => {
+    strict_1.default.equal((0, preflight_1.normalizeScope)('src/auth/../payments/stripe.ts'), 'src/payments/stripe.ts');
+    strict_1.default.equal((0, preflight_1.scopesOverlap)('src/auth', 'src/auth/../payments/stripe.ts'), false);
+    strict_1.default.equal((0, preflight_1.scopesOverlap)('src/auth', 'src/auth/../auth/login.ts'), true);
+    // A ".." that leaves the repository is kept instead of collapsing onto the root.
+    strict_1.default.equal((0, preflight_1.normalizeScope)('../other-repo/src'), '../other-repo/src');
+    strict_1.default.equal((0, preflight_1.scopesOverlap)('src', '../other-repo/src'), false);
+});
 (0, node_test_1.test)('empty scopes never match', () => {
     strict_1.default.equal((0, preflight_1.scopesOverlap)('', 'src/auth'), false);
     strict_1.default.equal((0, preflight_1.scopesOverlap)('src/auth', '   '), false);

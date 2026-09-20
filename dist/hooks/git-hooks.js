@@ -215,11 +215,12 @@ const PRE_PUSH_HOOK = `#!/bin/bash
 ACTOR="\${NEXUS_ACTOR:-\$(git config user.name 2>/dev/null || echo 'unknown')}"
 BRANCH="\$(git branch --show-current 2>/dev/null || echo 'detached')"
 
-# Run pre-flight check (informational, non-blocking)
+# Run pre-flight check (informational, non-blocking).
+# "preflight" always exits 0, so the output is what matters: with --quiet it stays
+# empty as long as the check passes.
 RESULT="\$(nexus preflight --actor "$ACTOR" --branch "$BRANCH" --quiet 2>&1)"
-EXIT_CODE=$?
 
-if [ $EXIT_CODE -ne 0 ] && [ -n "$RESULT" ]; then
+if [ -n "$RESULT" ]; then
   echo ""
   echo "  ╔══════════════════════════════════════════════════════════╗"
   echo "  ║  NEXUS WARNING: Potential conflicts detected            ║"

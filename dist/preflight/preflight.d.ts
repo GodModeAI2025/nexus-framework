@@ -30,8 +30,10 @@ export interface PreFlightResult {
     summary: string;
 }
 /**
- * Normalizes a path or unit key before comparing scopes:
- * strips a leading "./", trailing slashes and surrounding whitespace.
+ * Normalizes a path or unit key before comparing scopes: surrounding whitespace,
+ * backslashes (Windows), empty segments ("//", trailing "/") and the "." / ".."
+ * segments are resolved. Without this, "src/auth/../payments" would still look
+ * like a hit on a claim for "src/auth".
  */
 export declare function normalizeScope(value: string): string;
 /**
